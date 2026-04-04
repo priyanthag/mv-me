@@ -25,9 +25,9 @@ duration = args.stop_after * 60 if args.stop_after is not None else None
 
 print('Press Ctrl-C to quit.')
 if args.start_after is not None:
-    print(f'Will start after {args.start_after} minutes.')
+    print(f'Will start after {format_duration(args.start_after * 60)}.')
 if args.stop_after is not None:
-    print(f'Will stop after {args.stop_after} minutes.')
+    print(f'Will stop after {format_duration(args.stop_after * 60)}.')
 try:
     if args.start_after is not None:
         remaining_delay = args.start_after * 60
