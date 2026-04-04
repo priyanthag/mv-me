@@ -32,7 +32,7 @@ try:
     if args.start_after is not None:
         remaining_delay = args.start_after * 60
         while remaining_delay > 0:
-            print(f'Starting in {remaining_delay} seconds...')
+            print(f'Starting in {format_duration(remaining_delay)}...')
             sleep_interval = min(2, remaining_delay)
             time.sleep(sleep_interval)
             remaining_delay -= sleep_interval
