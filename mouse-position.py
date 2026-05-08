@@ -2,6 +2,12 @@
 import pyautogui, time, argparse
 import random
 
+try:
+    from screeninfo import get_monitors
+    HAS_SCREENINFO = True
+except ImportError:
+    HAS_SCREENINFO = False
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--stop-after', type=int, default=None, metavar='MINUTES',
                     help='Stop after this many minutes (default: run forever)')
@@ -21,6 +27,23 @@ def format_duration(total_seconds):
     return f'{seconds}s'
 
 
+def get_active_monitor_center():
+    """Return (cx, cy) for the monitor that currently contains the mouse pointer."""
+    mx, my = pyautogui.position()
+
+    if HAS_SCREENINFO:
+        for m in get_monitors():
+            if m.x <= mx < m.x + m.width and m.y <= my < m.y + m.height:
+                return m.x + m.width // 2, m.y + m.height // 2
+        # Fallback: first monitor
+        m = get_monitors()[0]
+        return m.x + m.width // 2, m.y + m.height // 2
+
+    # No screeninfo — use pyautogui's primary screen size
+    w, h = pyautogui.size()
+    return w // 2, h // 2
+
+
 duration = args.stop_after * 60 if args.stop_after is not None else None
 
 print('Press Ctrl-C to quit.')
@@ -36,25 +59,24 @@ try:
             sleep_interval = min(2, remaining_delay)
             time.sleep(sleep_interval)
             remaining_delay -= sleep_interval
+
     end_time = time.time() + duration if duration is not None else None
+
+    # Move to the center of the active monitor once before the loop starts
+    cx, cy = get_active_monitor_center()
+    print(f'Moving to center of active monitor ({cx}, {cy}).')
+    pyautogui.moveTo(cx, cy, 1)
+
     print('Mouse is moving.')
     while end_time is None or time.time() < end_time:
+        cx, cy = get_active_monitor_center()
+        offset_x = random.randint(-2, 2)
+        offset_y = random.randint(-2, 2)
+        target_x = cx + offset_x
+        target_y = cy + offset_y
+        print(f'Mouse is moving to ({target_x}, {target_y}).')
+        pyautogui.moveTo(target_x, target_y, 1)
 
-        random_X = random.randint(100, 500)
-        random_Y = random.randint(100, 500)
-        print(f'Mouse is moving to ({random_X}, {random_Y}).')
-        pyautogui.moveTo(random_X, random_Y, 1)
-        # pyautogui.click(random_X, random_Y)
-        # pyautogui.press('enter')
-
-        # pyautogui.moveTo(1900, -1000, 1)
-        # pyautogui.click(1900, -1000)
-        # pyautogui.press('enter')
-
-        # time.sleep(2)
-        # pyautogui.moveTo(1900, -600, 1)
-        # pyautogui.click(1900, -600)
-        # pyautogui.press('enter')
         next_move_time = time.time() + 10
         while time.time() < next_move_time:
             if end_time is not None:
@@ -64,6 +86,6 @@ try:
             if sleep_interval <= 0:
                 break
             time.sleep(min(2, sleep_interval))
-        
+
 except KeyboardInterrupt:
     print('\n')
