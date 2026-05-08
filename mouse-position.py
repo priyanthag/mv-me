@@ -67,17 +67,21 @@ try:
     print(f'Moving to center of active monitor ({cx}, {cy}).')
     pyautogui.moveTo(cx, cy, 1)
 
+    # Track where the script last placed the pointer so we can detect user moves
+    last_placed_x, last_placed_y = cx, cy
+    base_x, base_y = cx, cy
+
     print('Mouse is moving.')
     while end_time is None or time.time() < end_time:
-        cx, cy = get_active_monitor_center()
-        offset_x = random.randint(-2, 2)
-        offset_y = random.randint(-2, 2)
-        target_x = cx + offset_x
-        target_y = cy + offset_y
+        offset_x = random.randint(-5, 5)
+        offset_y = random.randint(-5, 5)
+        target_x = base_x + offset_x
+        target_y = base_y + offset_y
         print(f'Mouse is moving to ({target_x}, {target_y}).')
         pyautogui.moveTo(target_x, target_y, 1)
+        last_placed_x, last_placed_y = target_x, target_y
 
-        next_move_time = time.time() + 10
+        next_move_time = time.time() + 120
         while time.time() < next_move_time:
             if end_time is not None:
                 print(f'Script will stop in {format_duration(end_time - time.time())}.')
@@ -86,6 +90,14 @@ try:
             if sleep_interval <= 0:
                 break
             time.sleep(min(2, sleep_interval))
+
+            # Check for user movement during the wait as well
+            current_x, current_y = pyautogui.position()
+            if abs(current_x - last_placed_x) > 2 or abs(current_y - last_placed_y) > 2:
+                base_x, base_y = current_x, current_y
+                last_placed_x, last_placed_y = current_x, current_y
+                print(f'User moved mouse to ({base_x}, {base_y}). Next move in 2 minutes.')
+                next_move_time = time.time() + 120
 
 except KeyboardInterrupt:
     print('\n')
