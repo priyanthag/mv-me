@@ -45,12 +45,13 @@ try:
 
     print('Mouse is moving.')
     while end_time is None or time.time() < end_time:
-        origin_x, origin_y = base_x, base_y
+        # Read the live position right now so the return lands on the exact pixel
+        origin_x, origin_y = pyautogui.position()
+        base_x, base_y = origin_x, origin_y
 
-        # Move 1 pixel right, then return to exact origin
         print(f'Nudging from ({origin_x}, {origin_y}).')
         pyautogui.moveTo(origin_x + 1, origin_y, 0.1)
-        pyautogui.moveTo(origin_x, origin_y, 0.1)
+        pyautogui.moveTo(origin_x, origin_y, 0.1)   # return to exact origin
         last_placed_x, last_placed_y = origin_x, origin_y
 
         next_move_time = time.time() + 120
