@@ -9,10 +9,12 @@ A script that moves the mouse cursor randomly to keep the screen active.
 
 ### Install dependencies
 
+Create a virtual environment, activate it, then install all dependencies from `requirements.txt`:
+
 ```bash
 python3 -m venv ./.venv
 source ./.venv/bin/activate
-python3 -m pip install pyautogui
+pip install -r requirements.txt
 ```
 
 ## Usage
