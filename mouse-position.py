@@ -1,5 +1,5 @@
 #! python3
-import pyautogui, time, argparse
+import pyautogui, time, argparse, subprocess, sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--stop-after', type=int, default=None, metavar='MINUTES',
@@ -27,6 +27,13 @@ if args.start_after is not None:
     print(f'Will start after {format_duration(args.start_after * 60)}.')
 if args.stop_after is not None:
     print(f'Will stop after {format_duration(args.stop_after * 60)}.')
+
+# caffeinate -d keeps the display awake for as long as this script runs (macOS only)
+caffeinate = None
+if sys.platform == 'darwin':
+    caffeinate = subprocess.Popen(['caffeinate', '-d'])
+    print('Display sleep prevention active (caffeinate -d).')
+
 try:
     if args.start_after is not None:
         remaining_delay = args.start_after * 60
@@ -74,3 +81,6 @@ try:
 
 except KeyboardInterrupt:
     print('\n')
+finally:
+    if caffeinate is not None:
+        caffeinate.terminate()
