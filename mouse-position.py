@@ -1,5 +1,7 @@
 #! python3
-import pyautogui, time, argparse, subprocess, sys
+import pyautogui, time, argparse, subprocess, sys, random
+
+IDLE_THRESHOLD = 180  # seconds of no movement before script acts
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--stop-after', type=int, default=None, metavar='MINUTES',
@@ -45,39 +47,47 @@ try:
 
     end_time = time.time() + duration if duration is not None else None
 
-    # Snapshot where the pointer is right now — no initial move to center
-    base_x, base_y = pyautogui.position()
-    last_placed_x, last_placed_y = base_x, base_y
-    print(f'Starting at ({base_x}, {base_y}).')
+    last_x, last_y = pyautogui.position()
+    last_activity_time = time.time()
+    last_log_time = 0  # force an immediate countdown print on first tick
+    print(f'Watching from ({last_x}, {last_y}). Will move after {IDLE_THRESHOLD // 60} minutes of inactivity.')
 
-    print('Mouse is moving.')
     while end_time is None or time.time() < end_time:
-        # Read the live position right now so the return lands on the exact pixel
-        origin_x, origin_y = pyautogui.position()
-        base_x, base_y = origin_x, origin_y
+        time.sleep(2)
 
-        print(f'Nudging from ({origin_x}, {origin_y}).')
-        pyautogui.moveTo(origin_x + 1, origin_y, 0.1)
-        pyautogui.moveTo(origin_x, origin_y, 0.1)   # return to exact origin
-        last_placed_x, last_placed_y = origin_x, origin_y
+        if end_time is not None:
+            print(f'Script will stop in {format_duration(end_time - time.time())}.')
 
-        next_move_time = time.time() + 120
-        while time.time() < next_move_time:
-            if end_time is not None:
-                print(f'Script will stop in {format_duration(end_time - time.time())}.')
-            sleep_until = next_move_time if end_time is None else min(next_move_time, end_time)
-            sleep_interval = sleep_until - time.time()
-            if sleep_interval <= 0:
-                break
-            time.sleep(min(2, sleep_interval))
+        current_x, current_y = pyautogui.position()
 
-            # If the pointer moved more than 1px from where we left it, the user moved it
-            current_x, current_y = pyautogui.position()
-            if abs(current_x - last_placed_x) > 1 or abs(current_y - last_placed_y) > 1:
-                base_x, base_y = current_x, current_y
-                last_placed_x, last_placed_y = current_x, current_y
-                print(f'User moved mouse to ({base_x}, {base_y}). Next nudge in 2 minutes.')
-                next_move_time = time.time() + 120
+        # User moved the mouse — reset the idle clock
+        if abs(current_x - last_x) > 1 or abs(current_y - last_y) > 1:
+            last_x, last_y = current_x, current_y
+            last_activity_time = time.time()
+            last_log_time = 0  # force countdown print on next tick after reset
+            next_move_at = time.strftime('%H:%M:%S', time.localtime(last_activity_time + IDLE_THRESHOLD))
+            print(f'User moved mouse to ({last_x}, {last_y}). Idle timer reset. Next move at {next_move_at}.')
+            continue
+
+        idle_seconds = time.time() - last_activity_time
+        remaining_seconds = max(0, IDLE_THRESHOLD - idle_seconds)
+
+        # Print countdown every 30 seconds
+        if time.time() - last_log_time >= 30:
+            next_move_at = time.strftime('%H:%M:%S', time.localtime(last_activity_time + IDLE_THRESHOLD))
+            print(f'Next mouse move in {format_duration(remaining_seconds)} (at {next_move_at}).')
+            last_log_time = time.time()
+
+        if idle_seconds >= IDLE_THRESHOLD:
+            origin_x, origin_y = pyautogui.position()
+            rand_x = random.randint(100, 500)
+            rand_y = random.randint(100, 500)
+            print(f'Idle for {format_duration(idle_seconds)}. Moving to ({rand_x}, {rand_y}) then returning.')
+            pyautogui.moveTo(rand_x, rand_y, 0.5)
+            pyautogui.moveTo(origin_x, origin_y, 0.5)
+            last_x, last_y = origin_x, origin_y
+            last_activity_time = time.time()
+            last_log_time = 0  # force countdown print on next tick after move
 
 except KeyboardInterrupt:
     print('\n')
